@@ -127,6 +127,7 @@ public class QuizServiceImpl implements QuizService {
 		}
 		return new BasicRes(ResCodMessage.SUCCESS.getCode(), ResCodMessage.SUCCESS.getMessage());
 	}
+
 	@Transactional(rollbackFor = Exception.class)
 	@Override
 	public BasicRes update(QuizUpdateReq req) throws Exception {
@@ -197,10 +198,10 @@ public class QuizServiceImpl implements QuizService {
 				List<String> optionList = mapper.readValue(str, new TypeReference<>() {
 				});
 				// 將從DB取得的每一筆資料(Question item) 的每個欄位值放到 QuestionVo 中，以便返回給使用者
-				//Question 和 QuestionVO 的差別在於 選項 的資料型態
+				// Question 和 QuestionVO 的差別在於 選項 的資料型態
 				QuestionVO vo = new QuestionVO(item.getQuizid(), item.getQuestionid(), item.getQuestion(), //
 						item.getType(), item.isRequired(), optionList);
-				//把每個 vo 放到 questionVoList 中
+				// 把每個 vo 放到 questionVoList 中
 				questionVoList.add(vo);
 			} catch (Exception e) {
 				// 這邊不寫 throw e 是因為次方法中沒有使用 @Transactional，不影響返回結果
@@ -209,32 +210,54 @@ public class QuizServiceImpl implements QuizService {
 			}
 		}
 		return new QuestionRes(ResCodMessage.SUCCESS.getCode(), //
-				ResCodMessage.SUCCESS.getMessage(),questionVoList);
+				ResCodMessage.SUCCESS.getMessage(), questionVoList);
 	}
 
 	@Override
 	public SearchRes search(SearchReq req) {
-		//轉換 req 的值
-		//quizName 是 null，轉成空字串
-		String quizName =req.getQuizName();
-		if(quizName == null) {
-			quizName ="";
-		}else {//多餘的，不需要寫，但為了理解下面的3元運算子而寫
-			quizName =quizName;
+		// 轉換 req 的值
+		// quizName 是 null，轉成空字串
+		String quizName = req.getQuizName();
+		if (quizName == null) {
+			quizName = "";
+		} else {// 多餘的，不需要寫，但為了理解下面的3元運算子而寫
+			quizName = quizName;
 		}
-		//3元運算子
-		//格式: 變數名稱 = 條件判斷式 ? 判斷式結果為 true 時要賦予的值 : 判斷式結果為 false時要賦予的ㄓ˙
-		quizName =quizName == null ? "" : quizName;
-		//上面的程式碼可以只用下面一行來取得值
-		String quizString =req.getQuizName() == null ?"" : req.getQuizName();
-		//==========================================
-		//轉換 開始時間 --> 若沒有給開始日期 --> 給定一個很早的時間
+		// 3元運算子
+		// 格式: 變數名稱 = 條件判斷式 ? 判斷式結果為 true 時要賦予的值 : 判斷式結果為 false時要賦予的ㄓ˙
+		quizName = quizName == null ? "" : quizName;
+		// 上面的程式碼可以只用下面一行來取得值
+		String quizString = req.getQuizName() == null ? "" : req.getQuizName();
+		// ==========================================
+		// 轉換 開始時間 --> 若沒有給開始日期 --> 給定一個很早的時間
 		LocalDate startDate = req.getStartDate() == null ? LocalDate.of(1970, 1, 1) : req.getStartDate();
-		
-		LocalDate endDate =req.getEndDate() == null ? LocalDate.of(2999, 12, 31) : req.getEndDate();
-		
-		List<Quiz>list = quizDao.getAll(quizName,startDate, endDate);
 
-		return new SearchRes(ResCodMessage.SUCCESS.getCode(), ResCodMessage.SUCCESS.getMessage(),list);
+		LocalDate endDate = req.getEndDate() == null ? LocalDate.of(2999, 12, 31) : req.getEndDate();
+
+		List<Quiz> list = new ArrayList<>();
+
+		if (req.isPublished()) {
+			list = quizDao.getAllPublished(quizName, startDate, endDate);
+		} else {
+			list = quizDao.getAll(quizName, startDate, endDate);
+		}
+
+		return new SearchRes(ResCodMessage.SUCCESS.getCode(), ResCodMessage.SUCCESS.getMessage(), list);
+	}
+
+	@Transactional(rollbackFor = Exception.class)
+	@Override
+	public BasicRes delete(int quizId) throws Exception {
+		if (quizId <= 0) {
+			return new BasicRes(ResCodMessage.QUIZ_ID_ERROR.getCode(), ResCodMessage.QUIZ_ID_ERROR.getMessage());
+		}
+		try {
+			quizDao.deleteById(quizId);
+			questionDao.deleteByQuizId(quizId);
+		} catch (Exception e) {
+			// 不能 return BasicRes 而是要將發生的異常拋出去，這樣 @Transaction 才會生效
+			throw e;
+		}
+		return null;
 	}
 }

@@ -13,7 +13,8 @@ public enum ResCodMessage {
 	OPTIONS_INSUFFICIENT(400, "Options Insufficient!!"),
 	TEXT_HAS_OPTIONS_ERROR(400, "Text Has Options Error!!"),
 	QUIZ_UPDATE_FAILED(400, "Quiz Update Failed!!"),
-	OPTIONS_TRANSFER_ERROR(400,"Options Transfer Error!!")
+	OPTIONS_TRANSFER_ERROR(400,"Options Transfer Error!!"),
+	QUIZ_ID_ERROR(400, "Quiz Id Error!!"),
 	;
 	
 	private int code;
